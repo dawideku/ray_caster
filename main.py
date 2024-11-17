@@ -8,7 +8,7 @@ player_y = 0.0
 player_delta_x = 0.0
 player_delta_y = 0.0
 player_angle = 0.0
-
+degree = math.pi / 180
 
 def draw_player():
     glColor3f(1.0, 1.0, 0)
@@ -25,7 +25,7 @@ def draw_player():
 
 mapx = 8
 mapy = 8
-maps = 64
+map_size = 64
 map_tab = [
     [1,1,1,1,1,1,1,1],
     [1,0,1,0,0,0,0,1],
@@ -40,25 +40,29 @@ map_tab = [
 def draw_2d_map():
     for i in range(mapy):
         for j in range(mapx):
-            temp_x = j * maps
-            temp_y = i * maps
+            temp_x = j * map_size
+            temp_y = i * map_size
             if map_tab[i][j] == 1:
                 glColor3f(1.0, 1.0, 1.0)
             else:
                 glColor3f(0.0, 0.0, 0.0)
             glBegin(GL_QUADS)
             glVertex2f(temp_x + 1, temp_y + 1)
-            glVertex2f(temp_x + 1, temp_y + maps - 1)
-            glVertex2f(temp_x+maps - 1, temp_y+maps - 1)
-            glVertex2f(temp_x+maps - 1, temp_y + 1)
+            glVertex2f(temp_x + 1, temp_y + map_size - 1)
+            glVertex2f(temp_x + map_size - 1, temp_y + map_size - 1)
+            glVertex2f(temp_x + map_size - 1, temp_y + 1)
             glEnd()
 
 def distance(ax, bx, ay, by):
     return math.sqrt((bx - ax) ** 2 + (by - ay) ** 2)
 
 def draw_rays_2d():
-    rays = 1
-    ray_angle = player_angle
+    rays = 60
+    ray_angle = player_angle - degree * 30
+    if ray_angle < 0:
+        ray_angle += 2 * math.pi
+    if ray_angle > 2 * math.pi:
+        ray_angle -= 2 * math.pi
     ray_x, ray_y, x_offset, y_offset = 0.0, 0.0, 0.0, 0.0
     for i in range(rays):
         # horizontal line
@@ -134,16 +138,42 @@ def draw_rays_2d():
         if dis_horizontal > dis_vertical:
             ray_x = ver_x
             ray_y = ver_y
+            curr_distance = dis_vertical
+            glColor3f(0.0, 0.0, 0.7)
         else:
             ray_x = hor_x
             ray_y = hor_y
-
-        glColor3f(0.0, 0.0, 1.0)
+            curr_distance = dis_horizontal
+            glColor3f(0.0, 0.0, 0.9)
+        #draw 2d
         glLineWidth(3.0)
         glBegin(GL_LINES)
         glVertex2f(player_x, player_y)
         glVertex2f(ray_x, ray_y)
         glEnd()
+
+        #draw 3d
+        fish_fix = player_angle - ray_angle
+        if fish_fix < 0:
+            fish_fix += 2 * math.pi
+        if fish_fix > 2 * math.pi:
+            fish_fix -= 2 * math.pi
+        curr_distance = curr_distance * math.cos(fish_fix)
+        line_height = (map_size*512)/curr_distance
+        line_offset = 300 - line_height/2
+        if line_height > 2048:
+            line_height = 512
+        glLineWidth(8.5)
+        glBegin(GL_LINES)
+        glVertex2f(i*8.5+515, line_offset)
+        glVertex2f(i*8.5+515, line_height + line_offset)
+        glEnd()
+
+        ray_angle += degree
+        if ray_angle < 0:
+            ray_angle += 2 * math.pi
+        if ray_angle > 2 * math.pi:
+            ray_angle -= 2 * math.pi
 
 def key_callback(window, key, scancode, action, mods):
     global player_x, player_y, player_angle, player_delta_x, player_delta_y
